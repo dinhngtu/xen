@@ -530,16 +530,64 @@ static struct e820map __initdata boot_e820;
 extern struct boot_video_info boot_vid_info;
 #endif
 
-static void __init parse_video_info(void)
+static void __init parse_video_info(const multiboot_info_t *mbi)
 {
 #ifdef CONFIG_VIDEO
     struct boot_video_info *bvi = &bootsym(boot_vid_info);
+
+    /*
+     * FB detection will be in this order:
+     *  - efifb (as efifb probe sets a new GOP mode before parse_video_info is called,
+     *    we must use this mode instead of the one given by mbifb)
+     *  - mbifb
+     *  - vesafb
+     */
 
     /* vga_console_info is filled directly on EFI platform. */
     if ( efi_enabled(EFI_BOOT) )
         return;
 
-    if ( (bvi->orig_video_isVGA == 1) && (bvi->orig_video_mode == 3) )
+    if ( mbi->flags & MBI_FB )
+    {
+        unsigned long lfb_rgb_bitmap = 0;
+
+        vga_console_info.video_type = XEN_VGATYPE_VESA_LFB;
+        vga_console_info.u.vesa_lfb.width = mbi->fb.width;
+        vga_console_info.u.vesa_lfb.height = mbi->fb.height;
+        vga_console_info.u.vesa_lfb.bytes_per_line = mbi->fb.pitch;
+        vga_console_info.u.vesa_lfb.bits_per_pixel = mbi->fb.bpp;
+        vga_console_info.u.vesa_lfb.lfb_base = mbi->fb.addr;
+        vga_console_info.u.vesa_lfb.lfb_size =
+            (mbi->fb.pitch * mbi->fb.height + 0xffff) >> 16;
+
+        vga_console_info.u.vesa_lfb.red_pos = mbi->fb.red_pos;
+        vga_console_info.u.vesa_lfb.red_size = mbi->fb.red_size;
+        lfb_rgb_bitmap |= ((1ull << mbi->fb.red_size) - 1) <<
+                          mbi->fb.red_pos;
+        vga_console_info.u.vesa_lfb.green_pos = mbi->fb.green_pos;
+        vga_console_info.u.vesa_lfb.green_size = mbi->fb.green_size;
+        lfb_rgb_bitmap |= ((1ull << mbi->fb.green_size) - 1) <<
+                          mbi->fb.green_pos;
+        vga_console_info.u.vesa_lfb.blue_pos = mbi->fb.blue_pos;
+        vga_console_info.u.vesa_lfb.blue_size = mbi->fb.blue_size;
+        lfb_rgb_bitmap |= ((1ull << mbi->fb.blue_size) - 1) <<
+                          mbi->fb.blue_pos;
+
+        /* assume non-weird bit format */
+        vga_console_info.u.vesa_lfb.rsvd_pos = find_first_set_bit(~lfb_rgb_bitmap);
+        vga_console_info.u.vesa_lfb.rsvd_size = mbi->fb.bpp -
+                                                mbi->fb.red_size -
+                                                mbi->fb.green_size -
+                                                mbi->fb.blue_size;
+        if ( vga_console_info.u.vesa_lfb.rsvd_pos >= mbi->fb.bpp ||
+             vga_console_info.u.vesa_lfb.rsvd_size < 0 )
+        {
+            vga_console_info.u.vesa_lfb.rsvd_pos = 0;
+            vga_console_info.u.vesa_lfb.rsvd_size = 0;
+        }
+        vga_console_info.u.vesa_lfb.gbl_caps = 2; /* possibly non-VGA */
+    }
+    else if ( (bvi->orig_video_isVGA == 1) && (bvi->orig_video_mode == 3) )
     {
         vga_console_info.video_type = XEN_VGATYPE_TEXT_MODE_3;
         vga_console_info.u.text_mode_3.font_height = bvi->orig_video_points;
@@ -935,7 +983,7 @@ void __init noreturn __start_xen(unsigned long mbi_p)
      */
     hypervisor_name = hypervisor_probe();
 
-    parse_video_info();
+    parse_video_info(mbi);
 
     /* We initialise the serial devices very early so we can get debugging. */
     ns16550.io_base = 0x3f8;
