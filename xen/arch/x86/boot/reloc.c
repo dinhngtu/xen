@@ -190,6 +190,8 @@ static multiboot_info_t *mbi2_reloc(uint32_t mbi_in, uint32_t video_out)
     multiboot_info_t *mbi_out;
 #ifdef CONFIG_VIDEO
     struct boot_video_info *video = NULL;
+    uint64_t fbaddr;
+    uint8_t fbtype;
 #endif
     u32 ptr;
     unsigned int i, mod_idx = 0;
@@ -321,12 +323,23 @@ static multiboot_info_t *mbi2_reloc(uint32_t mbi_in, uint32_t video_out)
             break;
 
         case MULTIBOOT2_TAG_TYPE_FRAMEBUFFER:
-            if ( (get_mb2_data(tag, framebuffer, framebuffer_type) !=
-                  MULTIBOOT2_FRAMEBUFFER_TYPE_RGB) )
-            {
-                video_out = 0;
-                video = NULL;
-            }
+            fbaddr = get_mb2_data(tag, framebuffer, addr);
+            fbtype = get_mb2_data(tag, framebuffer, fbtype);
+            if ( fbaddr == 0 || fbtype != MULTIBOOT2_FRAMEBUFFER_TYPE_RGB )
+                break;
+            mbi_out->flags |= MBI_FB;
+            mbi_out->fb.addr = fbaddr;
+            mbi_out->fb.pitch = get_mb2_data(tag, framebuffer, pitch);
+            mbi_out->fb.width = get_mb2_data(tag, framebuffer, width);
+            mbi_out->fb.height = get_mb2_data(tag, framebuffer, height);
+            mbi_out->fb.bpp = get_mb2_data(tag, framebuffer, bpp);
+            mbi_out->fb.fbtype = fbtype;
+            mbi_out->fb.red_pos = get_mb2_data(tag, framebuffer, red_pos);
+            mbi_out->fb.red_size = get_mb2_data(tag, framebuffer, red_size);
+            mbi_out->fb.green_pos = get_mb2_data(tag, framebuffer, green_pos);
+            mbi_out->fb.green_size = get_mb2_data(tag, framebuffer, green_size);
+            mbi_out->fb.blue_pos = get_mb2_data(tag, framebuffer, blue_pos);
+            mbi_out->fb.blue_size = get_mb2_data(tag, framebuffer, blue_size);
             break;
 #endif /* CONFIG_VIDEO */
 

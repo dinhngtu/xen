@@ -1,16 +1,16 @@
 /* multiboot.h - the header for Multiboot */
 /* Copyright (C) 1999, 2001  Free Software Foundation, Inc.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; If not, see <http://www.gnu.org/licenses/>.  */
 
@@ -42,6 +42,8 @@
 #define MBI_BIOSCONFIG (_AC(1,u) << 8)
 #define MBI_LOADERNAME (_AC(1,u) << 9)
 #define MBI_APM        (_AC(1,u) << 10)
+#define MBI_VBE        (_AC(1,u) << 11)
+#define MBI_FB         (_AC(1,u) << 12)
 
 #ifndef __ASSEMBLY__
 
@@ -103,6 +105,32 @@ struct multiboot_info {
 
     /* Valid if flags sets MBI_APM */
     u32 apm_table;
+
+    /* Valid if flags sets MBI_VBE */
+    struct {
+        u32 control_info;
+        u32 mode_info;
+        u16 mode;
+        u16 iface_seg;
+        u16 iface_off;
+        u16 iface_len;
+    } vbe;
+
+    /* Valid if flags sets MBI_FB */
+    struct {
+        u64 addr;
+        u32 pitch;
+        u32 width;
+        u32 height;
+        u8 bpp;
+        u8 fbtype;
+        u8 red_pos;
+        u8 red_size;
+        u8 green_pos;
+        u8 green_size;
+        u8 blue_pos;
+        u8 blue_size;
+    } fb;
 };
 typedef struct multiboot_info multiboot_info_t;
 

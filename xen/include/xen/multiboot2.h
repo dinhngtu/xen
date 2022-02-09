@@ -230,6 +230,39 @@ typedef struct {
     u32 mod_end;
     char cmdline[];
 } multiboot2_tag_module_t;
+
+typedef struct {
+    u8 red;
+    u8 green;
+    u8 blue;
+} multiboot2_framebuffer_color_t;
+
+typedef struct {
+    u32 type;
+    u32 size;
+    u64 addr;
+    u32 pitch;
+    u32 width;
+    u32 height;
+    u8 bpp;
+    u8 fbtype;
+    u16 reserved;
+
+    union {
+        struct {
+            u16 palette_num_colors;
+            multiboot2_framebuffer_color_t palette[0];
+        };
+        struct {
+            u8 red_pos;
+            u8 red_size;
+            u8 green_pos;
+            u8 green_size;
+            u8 blue_pos;
+            u8 blue_size;
+        };
+    };
+} multiboot2_tag_framebuffer_t;
 #endif /* __ASSEMBLY__ */
 
 #endif /* __MULTIBOOT2_H__ */
