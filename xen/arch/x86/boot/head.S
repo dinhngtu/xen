@@ -524,27 +524,41 @@ trampoline_bios_setup:
         mov     %ecx,%fs
         mov     %ecx,%gs
 
-        /* Set up trampoline segment 64k below EBDA */
-        movzwl  0x40e,%ecx          /* EBDA segment */
-        cmp     $0xa000,%ecx        /* sanity check (high) */
-        jae     0f
-        cmp     $0x4000,%ecx        /* sanity check (low) */
-        jae     1f
+        /* Check if Multiboot provides us with low memory size. */
+        mov     %edx,%ecx
+        test    %ecx,%ecx
+        jz      1f
+
+        /*
+         * Old Kexec used to report memory sizes in bytes instead of kilobytes
+         * like it's supposed to.
+         *
+         * If Multiboot reports more than 640 KB of low memory, assume we have
+         * this problem.
+         */
+        cmp     $640,%ecx
+        jbe     0f
+        shr     $10,%ecx
 0:
-        movzwl  0x413,%ecx          /* use base memory size on failure */
+        /* %ecx now contains the low memory size in kilobytes. */
         shl     $10-4,%ecx
+        jmp     3f
+
 1:
         /*
-         * Compare the value in the BDA with the information from the
-         * multiboot structure (if available) and use the smallest.
+         * Multiboot doesn't provide us with memory info. Set up trampoline
+         * segment 64k below EBDA as fallback.
          */
-        cmp     $0x100,%edx         /* is the multiboot value too small? */
-        jb      2f                  /* if so, do not use it */
-        shl     $10-4,%edx
-        cmp     %ecx,%edx           /* compare with BDA value */
-        cmovb   %edx,%ecx           /* and use the smaller */
-
+        movzwl  0x40e,%ecx          /* EBDA segment */
+        cmp     $0xa000,%ecx        /* sanity check (high) */
+        jae     2f
+        cmp     $0x4000,%ecx        /* sanity check (low) */
+        jae     3f
 2:
+        movzwl  0x413,%ecx          /* use base memory size on failure */
+        shl     $10-4,%ecx
+
+3:
         /* Reserve memory for the trampoline and the low-memory stack. */
         sub     $((TRAMPOLINE_SPACE+TRAMPOLINE_STACK_SPACE)>>4),%ecx
 
