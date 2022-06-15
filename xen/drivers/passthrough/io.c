@@ -989,6 +989,18 @@ static void __hvm_dpci_eoi(struct domain *d,
     hvm_pirq_eoi(pirq);
 }
 
+/*
+ * Gcc12 takes issue with pirq_dpci() being used in boolean context (see gcc
+ * bug 102967). While we can't replace the macro definition in the header by an
+ * inline function, we can do so here.
+ */
+static inline struct hvm_pirq_dpci *_pirq_dpci(struct pirq *pirq)
+{
+    return pirq_dpci(pirq);
+}
+#undef pirq_dpci
+#define pirq_dpci(pirq) _pirq_dpci(pirq)
+
 static void hvm_gsi_eoi(struct domain *d, unsigned int gsi)
 {
     struct pirq *pirq = pirq_info(d, gsi);
