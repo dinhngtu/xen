@@ -136,6 +136,7 @@
 #define cpu_has_md_clear        boot_cpu_has(X86_FEATURE_MD_CLEAR)
 #define cpu_has_rtm_always_abort boot_cpu_has(X86_FEATURE_RTM_ALWAYS_ABORT)
 #define cpu_has_tsx_force_abort boot_cpu_has(X86_FEATURE_TSX_FORCE_ABORT)
+#define cpu_has_hybrid          boot_cpu_has(X86_FEATURE_HYBRID)
 #define cpu_has_arch_caps       boot_cpu_has(X86_FEATURE_ARCH_CAPS)
 
 /* CPUID level 0x00000007:1.eax */
@@ -155,6 +156,8 @@
 #define cpu_has_rrsba           boot_cpu_has(X86_FEATURE_RRSBA)
 #define cpu_has_gds_ctrl        boot_cpu_has(X86_FEATURE_GDS_CTRL)
 #define cpu_has_gds_no          boot_cpu_has(X86_FEATURE_GDS_NO)
+#define cpu_has_rfds_no         boot_cpu_has(X86_FEATURE_RFDS_NO)
+#define cpu_has_rfds_clear      boot_cpu_has(X86_FEATURE_RFDS_CLEAR)
 
 /* Synthesized. */
 #define cpu_has_arch_perfmon    boot_cpu_has(X86_FEATURE_ARCH_PERFMON)
