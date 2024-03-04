@@ -5249,8 +5249,7 @@ static l3_pgentry_t *virt_to_xen_l3e(unsigned long v)
         if ( !pl3e )
             return NULL;
         clear_page(pl3e);
-        if ( locking )
-            spin_lock(&map_pgdir_lock);
+        spin_lock_if(locking, &map_pgdir_lock);
         if ( !(l4e_get_flags(*pl4e) & _PAGE_PRESENT) )
         {
             l4_pgentry_t l4e = l4e_from_paddr(__pa(pl3e), __PAGE_HYPERVISOR);
@@ -5284,8 +5283,7 @@ static l2_pgentry_t *virt_to_xen_l2e(unsigned long v)
         if ( !pl2e )
             return NULL;
         clear_page(pl2e);
-        if ( locking )
-            spin_lock(&map_pgdir_lock);
+        spin_lock_if(locking, &map_pgdir_lock);
         if ( !(l3e_get_flags(*pl3e) & _PAGE_PRESENT) )
         {
             l3e_write(pl3e, l3e_from_paddr(__pa(pl2e), __PAGE_HYPERVISOR));
@@ -5317,8 +5315,7 @@ l1_pgentry_t *virt_to_xen_l1e(unsigned long v)
         if ( !pl1e )
             return NULL;
         clear_page(pl1e);
-        if ( locking )
-            spin_lock(&map_pgdir_lock);
+        spin_lock_if(locking, &map_pgdir_lock);
         if ( !(l2e_get_flags(*pl2e) & _PAGE_PRESENT) )
         {
             l2e_write(pl2e, l2e_from_paddr(__pa(pl1e), __PAGE_HYPERVISOR));
@@ -5353,6 +5350,8 @@ l1_pgentry_t *virt_to_xen_l1e(unsigned long v)
     do {                      \
         if ( locking )        \
             l3t_lock(page);   \
+        else                            \
+            block_lock_speculation();   \
     } while ( false )
 
 #define L3T_UNLOCK(page)                           \
@@ -5503,8 +5502,7 @@ int map_pages_to_xen(
             if ( l3e_get_flags(ol3e) & _PAGE_GLOBAL )
                 flush_flags |= FLUSH_TLB_GLOBAL;
 
-            if ( locking )
-                spin_lock(&map_pgdir_lock);
+            spin_lock_if(locking, &map_pgdir_lock);
             if ( (l3e_get_flags(*pl3e) & _PAGE_PRESENT) &&
                  (l3e_get_flags(*pl3e) & _PAGE_PSE) )
             {
@@ -5601,8 +5599,7 @@ int map_pages_to_xen(
                 if ( l2e_get_flags(*pl2e) & _PAGE_GLOBAL )
                     flush_flags |= FLUSH_TLB_GLOBAL;
 
-                if ( locking )
-                    spin_lock(&map_pgdir_lock);
+                spin_lock_if(locking, &map_pgdir_lock);
                 if ( (l2e_get_flags(*pl2e) & _PAGE_PRESENT) &&
                      (l2e_get_flags(*pl2e) & _PAGE_PSE) )
                 {
@@ -5640,8 +5637,7 @@ int map_pages_to_xen(
             {
                 unsigned long base_mfn;
 
-                if ( locking )
-                    spin_lock(&map_pgdir_lock);
+                spin_lock_if(locking, &map_pgdir_lock);
 
                 ol2e = *pl2e;
                 /*
@@ -5693,8 +5689,7 @@ int map_pages_to_xen(
         {
             unsigned long base_mfn;
 
-            if ( locking )
-                spin_lock(&map_pgdir_lock);
+            spin_lock_if(locking, &map_pgdir_lock);
 
             ol3e = *pl3e;
             /*
@@ -5827,8 +5822,7 @@ int modify_xen_mappings(unsigned long s, unsigned long e, unsigned int nf)
                           l2e_from_pfn(l3e_get_pfn(*pl3e) +
                                        (i << PAGETABLE_ORDER),
                                        l3e_get_flags(*pl3e)));
-            if ( locking )
-                spin_lock(&map_pgdir_lock);
+            spin_lock_if(locking, &map_pgdir_lock);
             if ( (l3e_get_flags(*pl3e) & _PAGE_PRESENT) &&
                  (l3e_get_flags(*pl3e) & _PAGE_PSE) )
             {
@@ -5882,8 +5876,7 @@ int modify_xen_mappings(unsigned long s, unsigned long e, unsigned int nf)
                     l1e_write(&pl1e[i],
                               l1e_from_pfn(l2e_get_pfn(*pl2e) + i,
                                            l2e_get_flags(*pl2e) & ~_PAGE_PSE));
-                if ( locking )
-                    spin_lock(&map_pgdir_lock);
+                spin_lock_if(locking, &map_pgdir_lock);
                 if ( (l2e_get_flags(*pl2e) & _PAGE_PRESENT) &&
                      (l2e_get_flags(*pl2e) & _PAGE_PSE) )
                 {
@@ -5925,8 +5918,7 @@ int modify_xen_mappings(unsigned long s, unsigned long e, unsigned int nf)
              */
             if ( (nf & _PAGE_PRESENT) || ((v != e) && (l1_table_offset(v) != 0)) )
                 continue;
-            if ( locking )
-                spin_lock(&map_pgdir_lock);
+            spin_lock_if(locking, &map_pgdir_lock);
 
             /*
              * L2E may be already cleared, or set to a superpage, by
@@ -5971,8 +5963,7 @@ int modify_xen_mappings(unsigned long s, unsigned long e, unsigned int nf)
         if ( (nf & _PAGE_PRESENT) ||
              ((v != e) && (l2_table_offset(v) + l1_table_offset(v) != 0)) )
             continue;
-        if ( locking )
-            spin_lock(&map_pgdir_lock);
+        spin_lock_if(locking, &map_pgdir_lock);
 
         /*
          * L3E may be already cleared, or set to a superpage, by
