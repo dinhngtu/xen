@@ -53,9 +53,10 @@ struct pci_seg {
 
 static spinlock_t _pcidevs_lock = SPIN_LOCK_UNLOCKED;
 
-void pcidevs_lock(void)
+/* Do not use, as it has no speculation barrier, use pcidevs_lock() instead. */
+void pcidevs_lock_unsafe(void)
 {
-    spin_lock_recursive(&_pcidevs_lock);
+    _spin_lock_recursive(&_pcidevs_lock);
 }
 
 void pcidevs_unlock(void)
@@ -68,7 +69,8 @@ bool_t pcidevs_locked(void)
     return !!spin_is_locked(&_pcidevs_lock);
 }
 
-bool_t pcidevs_trylock(void)
+/* Do not use, as it has no speculation barrier, use pcidevs_trylock() instead. */
+bool_t pcidevs_trylock_unsafe(void)
 {
     return !!spin_trylock_recursive(&_pcidevs_lock);
 }

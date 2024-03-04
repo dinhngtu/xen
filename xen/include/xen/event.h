@@ -111,12 +111,12 @@ static inline unsigned int max_evtchns(const struct domain *d)
                           : BITS_PER_EVTCHN_WORD(d) * BITS_PER_EVTCHN_WORD(d);
 }
 
-static inline void evtchn_read_lock(struct evtchn *evtchn)
+static always_inline void evtchn_read_lock(struct evtchn *evtchn)
 {
     read_lock(&evtchn->lock);
 }
 
-static inline bool evtchn_read_trylock(struct evtchn *evtchn)
+static always_inline bool evtchn_read_trylock(struct evtchn *evtchn)
 {
     return read_trylock(&evtchn->lock);
 }

@@ -144,11 +144,17 @@ struct pci_dev {
  * devices, it also sync the access to the msi capability that is not
  * interrupt handling related (the mask bit register).
  */
-
-void pcidevs_lock(void);
+void pcidevs_lock_unsafe(void);
+static always_inline void pcidevs_lock(void)
+{
+    pcidevs_lock_unsafe();
+    block_lock_speculation();
+}
 void pcidevs_unlock(void);
 bool_t __must_check pcidevs_locked(void);
-bool_t __must_check pcidevs_trylock(void);
+
+bool_t __must_check pcidevs_trylock_unsafe(void);
+#define pcidevs_trylock() lock_evaluate_nospec(pcidevs_trylock_unsafe())
 
 bool_t pci_known_segment(u16 seg);
 bool_t pci_device_detect(u16 seg, u8 bus, u8 dev, u8 func);
