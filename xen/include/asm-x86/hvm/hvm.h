@@ -548,8 +548,24 @@ static inline void hvm_set_info_guest(struct vcpu *v)
         alternative_vcall(hvm_funcs.set_info_guest, v);
 }
 
-static inline void hvm_invalidate_regs_fields(struct cpu_user_regs *regs)
+static inline void hvm_sanitize_regs_fields(struct cpu_user_regs *regs,
+                                            bool compat)
 {
+    if ( compat )
+    {
+        /* Clear GPR upper halves, to counteract guests playing games. */
+        regs->rbp = regs->ebp;
+        regs->rbx = regs->ebx;
+        regs->rax = regs->eax;
+        regs->rcx = regs->ecx;
+        regs->rdx = regs->edx;
+        regs->rsi = regs->esi;
+        regs->rdi = regs->edi;
+        regs->rip = regs->eip;
+        regs->rflags = regs->eflags;
+        regs->rsp = regs->esp;
+    }
+
 #ifndef NDEBUG
     regs->error_code = 0xbeef;
     regs->entry_vector = 0xbeef;
