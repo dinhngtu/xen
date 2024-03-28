@@ -1843,7 +1843,7 @@ void __init noreturn __start_xen(unsigned long mbi_p)
     {
         struct cpu_info *info = get_cpu_info();
 
-        info->spec_ctrl_flags &= ~SCF_use_shadow;
+        info->scf &= ~SCF_use_shadow;
         barrier();
         wrmsrl(MSR_SPEC_CTRL, default_xen_spec_ctrl);
         info->last_spec_ctrl = default_xen_spec_ctrl;
