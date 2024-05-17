@@ -16,6 +16,7 @@
 #include <xen/errno.h>
 #include <xen/pci.h>
 #include <xen/pci_regs.h>
+#include <xen/softirq.h>
 #include <xen/iocap.h>
 #include <xen/keyhandler.h>
 #include <xen/pfn.h>
@@ -1436,6 +1437,9 @@ static void dump_msi(unsigned char key)
         struct msi_attrib attr;
         unsigned long flags;
         const char *type = "???";
+
+        if ( !(irq & 0x1f) )
+            process_pending_softirqs();
 
         if ( !irq_desc_initialized(desc) )
             continue;
