@@ -22,3 +22,5 @@ void early_init_amd(struct cpuinfo_x86 *c);
 void amd_init_lfence(struct cpuinfo_x86 *c);
 void amd_init_ssbd(const struct cpuinfo_x86 *c);
 void amd_init_spectral_chicken(void);
+
+void intel_unlock_cpuid_leaves(struct cpuinfo_x86 *c);
