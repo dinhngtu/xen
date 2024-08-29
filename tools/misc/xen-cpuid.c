@@ -186,7 +186,7 @@ static const char *const str_7a1[32] =
 static const char *const str_e21a[32] =
 {
     [ 2] = "lfence+",
-
+    /* 4 */                 [ 5] = "verw-clear",
     /* 26 */                [27] = "sbpb",
     [28] = "ibpb-brtype",   [29] = "srso-no",
     [30] = "srso-us-no",    [31] = "srso-msr-fix",
@@ -234,6 +234,8 @@ static const char *const str_m10Al[64] =
 
 static const char *const str_e21c[32] =
 {
+    /* 0 */                       [ 1] = "tsa-sq-no",
+    [ 2] = "tsa-l1-no",
 };
 
 static const struct {
