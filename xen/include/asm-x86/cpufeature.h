@@ -142,6 +142,10 @@
 /* CPUID level 0x00000007:1.eax */
 #define cpu_has_avx512_bf16     boot_cpu_has(X86_FEATURE_AVX512_BF16)
 
+/* CPUID level 0x80000021.eax */
+#define cpu_has_lfence_dispatch boot_cpu_has(X86_FEATURE_LFENCE_DISPATCH)
+#define cpu_has_nscb            boot_cpu_has(X86_FEATURE_NSCB)
+
 /* MSR_ARCH_CAPS */
 #define cpu_has_rdcl_no         boot_cpu_has(X86_FEATURE_RDCL_NO)
 #define cpu_has_eibrs           boot_cpu_has(X86_FEATURE_EIBRS)
@@ -164,7 +168,6 @@
 #define cpu_has_arch_perfmon    boot_cpu_has(X86_FEATURE_ARCH_PERFMON)
 #define cpu_has_cpuid_faulting  boot_cpu_has(X86_FEATURE_CPUID_FAULTING)
 #define cpu_has_aperfmperf      boot_cpu_has(X86_FEATURE_APERFMPERF)
-#define cpu_has_lfence_dispatch boot_cpu_has(X86_FEATURE_LFENCE_DISPATCH)
 #define cpu_has_xen_lbr         boot_cpu_has(X86_FEATURE_XEN_LBR)
 
 #define cpu_has_msr_tsc_aux     (cpu_has_rdtscp || cpu_has_rdpid)
