@@ -438,7 +438,9 @@ static void generic_identify(struct cpuinfo_x86 *c)
 	if (c->extended_cpuid_level >= 0x80000008)
 		c->x86_capability[FEATURESET_e8b] = cpuid_ebx(0x80000008);
 	if (c->extended_cpuid_level >= 0x80000021)
-		c->x86_capability[FEATURESET_e21a] = cpuid_eax(0x80000021);
+		cpuid(0x80000021,
+		      &c->x86_capability[FEATURESET_e21a], &tmp,
+		      &c->x86_capability[FEATURESET_e21c], &tmp);
 
 	/* Intel-defined flags: level 0x00000007 */
 	if (c->cpuid_level >= 7) {
@@ -597,7 +599,7 @@ static void fill_featureset(uint32_t fs[FSCAPINTS])
 {
     unsigned int i, max_leaf, max_extd, tmp;
 
-    BUILD_BUG_ON(FSCAPINTS != 22);
+    BUILD_BUG_ON(FSCAPINTS != 23);
 
     max_leaf = cpuid_eax(0);
     if ( max_leaf >= 1 )

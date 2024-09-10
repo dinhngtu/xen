@@ -83,6 +83,7 @@ void x86_cpu_policy_to_featureset(
     fs[FEATURESET_7d1]       = p->feat._7d1;
     fs[FEATURESET_m10Al]     = p->arch_caps.lo;
     fs[FEATURESET_m10Ah]     = p->arch_caps.hi;
+    fs[FEATURESET_e21c]      = p->extd.e21c;
 
     /* Zero reserved featureset words */
     for ( i = FEATURESET_m10Ah + 1; i < FEATURESET_NR_ENTRIES; i++ )
@@ -110,6 +111,7 @@ void x86_cpu_featureset_to_policy(
     p->feat._7d1             = fs[FEATURESET_7d1];
     p->arch_caps.lo          = fs[FEATURESET_m10Al];
     p->arch_caps.hi          = fs[FEATURESET_m10Ah];
+    p->extd.e21c             = fs[FEATURESET_e21c];
 }
 
 void x86_cpu_policy_recalc_synth(struct cpu_policy *p)
