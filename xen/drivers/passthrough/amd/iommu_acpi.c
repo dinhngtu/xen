@@ -240,8 +240,9 @@ static int __init register_range_for_device(
     iommu = find_iommu_for_device(seg, bdf);
     if ( !iommu )
     {
-        AMD_IOMMU_DEBUG("IVMD Error: No IOMMU for Dev_Id %#x!\n", bdf);
-        return -ENODEV;
+        printk(XENLOG_WARNING "AMD-Vi: Warning: IVMD: no IOMMU for device %04x:%02x:%02x:%u - ignoring constraint\n",
+               seg, PCI_BUS(bdf), PCI_SLOT(bdf), PCI_FUNC(bdf));
+        return 0;
     }
     req = ivrs_mappings[bdf].dte_requestor_id;
 
