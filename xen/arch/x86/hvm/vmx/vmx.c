@@ -479,6 +479,13 @@ static const struct lbr_info {
     { MSR_GM_LASTBRANCH_0_FROM_IP,  NUM_MSR_GM_LASTBRANCH_FROM_TO },
     { MSR_GM_LASTBRANCH_0_TO_IP,    NUM_MSR_GM_LASTBRANCH_FROM_TO },
     { 0, 0 }
+}, architectural_lbr[] = {
+    { MSR_IA32_LASTINTFROMIP,        1 },
+    { MSR_IA32_LASTINTTOIP,          1 },
+    { MSR_IA32_LER_INFO,             1 },
+    { MSR_IA32_LASTBRANCH_0_FROM_IP, NUM_MSR_ARCH_LASTBRANCH_FROM_TO },
+    { MSR_IA32_LASTBRANCH_0_TO_IP,   NUM_MSR_ARCH_LASTBRANCH_FROM_TO },
+    { 0, 0 }
 };
 static const struct lbr_info *__ro_after_init model_specific_lbr;
 
@@ -1289,21 +1296,21 @@ static void cf_check vmx_get_segment_register(
          && !(v->arch.hvm.vmx.vm86_segment_mask & (1u << seg)) )
     {
         struct segment_register *sreg = &v->arch.hvm.vmx.vm86_saved_seg[seg];
-        if ( seg == x86_seg_tr ) 
+        if ( seg == x86_seg_tr )
             *reg = *sreg;
         else if ( reg->base != sreg->base || seg == x86_seg_ss )
         {
             /* If the guest's reloaded the segment, remember the new version.
-             * We can't tell if the guest reloaded the segment with another 
+             * We can't tell if the guest reloaded the segment with another
              * one that has the same base.  By default we assume it hasn't,
              * since we don't want to lose big-real-mode segment attributes,
              * but for SS we assume it has: the Ubuntu graphical bootloader
-             * does this and gets badly confused if we leave the old SS in 
+             * does this and gets badly confused if we leave the old SS in
              * place. */
             reg->attr = (seg == x86_seg_cs ? rm_cs_attr : rm_ds_attr);
             *sreg = *reg;
         }
-        else 
+        else
         {
             /* Always give realmode guests a selector that matches the base
              * but keep the attr and limit from before */
@@ -1329,8 +1336,8 @@ static void cf_check vmx_set_segment_register(
     {
         /* Remember the proper contents */
         v->arch.hvm.vmx.vm86_saved_seg[seg] = *reg;
-        
-        if ( seg == x86_seg_tr ) 
+
+        if ( seg == x86_seg_tr )
         {
             const struct domain *d = v->domain;
             uint64_t val = d->arch.hvm.params[HVM_PARAM_VM86_TSS_SIZED];
@@ -1365,7 +1372,7 @@ static void cf_check vmx_set_segment_register(
                 limit = 0xffff;
                 v->arch.hvm.vmx.vm86_segment_mask &= ~(1u << seg);
             }
-            else 
+            else
                 v->arch.hvm.vmx.vm86_segment_mask |= (1u << seg);
         }
     }
@@ -1601,7 +1608,7 @@ static void vmx_load_pdptrs(struct vcpu *v)
     page = get_page_from_gfn(v->domain, cr3 >> PAGE_SHIFT, &p2mt, P2M_ALLOC);
     if ( !page )
     {
-        /* Ideally you don't want to crash but rather go into a wait 
+        /* Ideally you don't want to crash but rather go into a wait
          * queue, but this is the wrong place. We're holding at least
          * the paging lock */
         gdprintk(XENLOG_ERR,
@@ -1978,7 +1985,7 @@ static void __vmx_inject_exception(int trap, int type, int error_code)
 
     __vmwrite(VM_ENTRY_INTR_INFO, intr_fields);
 
-    /* Can't inject exceptions in virtual 8086 mode because they would 
+    /* Can't inject exceptions in virtual 8086 mode because they would
      * use the protected-mode IDT.  Emulate at the next vmenter instead. */
     if ( curr->arch.hvm.vmx.vmx_realmode )
         curr->arch.hvm.vmx.vmx_emulate = 1;
@@ -1992,7 +1999,7 @@ void vmx_inject_extint(int trap, uint8_t source)
     if ( nestedhvm_vcpu_in_guestmode(v) ) {
         pin_based_cntrl = get_vvmcs(v, PIN_BASED_VM_EXEC_CONTROL);
         if ( pin_based_cntrl & PIN_BASED_EXT_INTR_MASK ) {
-            nvmx_enqueue_n2_exceptions (v, 
+            nvmx_enqueue_n2_exceptions (v,
                INTR_INFO_VALID_MASK |
                MASK_INSR(X86_ET_EXT_INTR, INTR_INFO_INTR_TYPE_MASK) |
                MASK_INSR(trap, INTR_INFO_VECTOR_MASK),
@@ -2011,7 +2018,7 @@ void vmx_inject_nmi(void)
     if ( nestedhvm_vcpu_in_guestmode(v) ) {
         pin_based_cntrl = get_vvmcs(v, PIN_BASED_VM_EXEC_CONTROL);
         if ( pin_based_cntrl & PIN_BASED_NMI_EXITING ) {
-            nvmx_enqueue_n2_exceptions (v, 
+            nvmx_enqueue_n2_exceptions (v,
                INTR_INFO_VALID_MASK |
                MASK_INSR(X86_ET_NMI, INTR_INFO_INTR_TYPE_MASK) |
                MASK_INSR(X86_EXC_NMI, INTR_INFO_VECTOR_MASK),
@@ -2092,7 +2099,7 @@ static void cf_check vmx_inject_event(const struct x86_event *event)
     if ( nestedhvm_vcpu_in_guestmode(curr) &&
          nvmx_intercepts_exception(curr, _event.vector, _event.error_code) )
     {
-        nvmx_enqueue_n2_exceptions (curr, 
+        nvmx_enqueue_n2_exceptions (curr,
             INTR_INFO_VALID_MASK |
             MASK_INSR(_event.type, INTR_INFO_INTR_TYPE_MASK) |
             MASK_INSR(_event.vector, INTR_INFO_VECTOR_MASK),
@@ -2127,7 +2134,7 @@ static void cf_check vmx_set_info_guest(struct vcpu *v)
 
     __vmwrite(GUEST_DR7, v->arch.dr7);
 
-    /* 
+    /*
      * If the interruptibility-state field indicates blocking by STI,
      * setting the TF flag in the EFLAGS may cause VM entry to fail
      * and crash the guest. See SDM 3B 22.3.1.5.
@@ -3308,7 +3315,12 @@ static int is_last_branch_msr(u32 ecx)
     const struct lbr_info *lbr = model_specific_lbr;
 
     if ( lbr == NULL )
-        return 0;
+    {
+        if ( cpu_has_vmx_guest_lbr_ctl )
+            lbr = architectural_lbr;
+        else
+            return 0;
+    }
 
     for ( ; lbr->count; lbr++ )
         if ( (ecx >= lbr->base) && (ecx < (lbr->base + lbr->count)) )
@@ -3367,6 +3379,12 @@ static int cf_check vmx_msr_read_intercept(
 
     case MSR_IA32_DEBUGCTLMSR:
         __vmread(GUEST_IA32_DEBUGCTL, msr_content);
+        break;
+
+    case MSR_IA32_LASTBRANCH_CTL:
+        if ( !cpu_has_vmx_guest_lbr_ctl )
+            goto gp_fault;
+        __vmread(GUEST_LBR_CTL, msr_content);
         break;
 
     case MSR_IA32_VMX_BASIC...MSR_IA32_VMX_VMFUNC:
@@ -3540,6 +3558,50 @@ void cf_check vmx_vlapic_msr_changed(struct vcpu *v)
     vmx_vmcs_exit(v);
 }
 
+static int vmx_lbr_insert(
+    struct vcpu *v, const struct lbr_info *lbr, bool is_architectural)
+{
+    int rc;
+
+    if ( is_architectural )
+    {
+        rc = vmx_add_guest_msr(v, MSR_IA32_LASTBRANCH_DEPTH,
+            NUM_MSR_ARCH_LASTBRANCH_FROM_TO);
+
+        if ( unlikely(rc) )
+        {
+            return rc;
+        }
+
+        vmx_clear_msr_intercept(v, MSR_IA32_LASTBRANCH_DEPTH, VMX_MSR_RW);
+    }
+
+    for ( ; lbr->count; lbr++ )
+    {
+        unsigned int i;
+
+        for ( i = 0; i < lbr->count; i++ )
+        {
+            rc = vmx_add_guest_msr(v, lbr->base + i, 0);
+
+            if ( unlikely(rc) )
+            {
+                return rc;
+            }
+
+            vmx_clear_msr_intercept(v, lbr->base + i, VMX_MSR_RW);
+        }
+    }
+
+    v->arch.hvm.vmx.lbr_flags |= LBR_MSRS_INSERTED;
+    if ( lbr_tsx_fixup_needed )
+        v->arch.hvm.vmx.lbr_flags |= LBR_FIXUP_TSX;
+    if ( ler_to_fixup_needed )
+        v->arch.hvm.vmx.lbr_flags |= LBR_FIXUP_LER_TO;
+
+    return 0;
+}
+
 static int cf_check vmx_msr_write_intercept(
     unsigned int msr, uint64_t msr_content)
 {
@@ -3652,15 +3714,31 @@ static int cf_check vmx_msr_write_intercept(
         if ( !(v->arch.hvm.vmx.lbr_flags & LBR_MSRS_INSERTED) &&
              (msr_content & IA32_DEBUGCTLMSR_LBR) )
         {
-            const struct lbr_info *lbr = model_specific_lbr;
+            int rc = vmx_lbr_insert(v, model_specific_lbr, false);
 
-            for ( ; lbr->count; lbr++ )
+            if ( unlikely(rc) )
             {
-                unsigned int i;
+                gprintk(XENLOG_ERR,
+                        "Guest load/save list error %d\n", rc);
+                domain_crash(v->domain);
+                return X86EMUL_OKAY;
+            }
+        }
 
-                for ( i = 0; i < lbr->count; i++ )
+        __vmwrite(GUEST_IA32_DEBUGCTL, msr_content);
+        break;
+
+    case MSR_IA32_LASTBRANCH_CTL:
+        if ( !cpu_has_vmx_guest_lbr_ctl )
+            goto gp_fault;
+
+        if ( msr_content & ~LASTBRANCH_CTL_VALID )
+            goto gp_fault;
+
+        if ( !(v->arch.hvm.vmx.lbr_flags & LBR_MSRS_INSERTED) &&
+             (msr_content & LASTBRANCH_CTL_LBREN) )
                 {
-                    int rc = vmx_add_guest_msr(v, lbr->base + i, 0);
+            int rc = vmx_lbr_insert(v, architectural_lbr, true);
 
                     if ( unlikely(rc) )
                     {
@@ -3669,19 +3747,9 @@ static int cf_check vmx_msr_write_intercept(
                         domain_crash(v->domain);
                         return X86EMUL_OKAY;
                     }
-
-                    vmx_clear_msr_intercept(v, lbr->base + i, VMX_MSR_RW);
-                }
-            }
-
-            v->arch.hvm.vmx.lbr_flags |= LBR_MSRS_INSERTED;
-            if ( lbr_tsx_fixup_needed )
-                v->arch.hvm.vmx.lbr_flags |= LBR_FIXUP_TSX;
-            if ( ler_to_fixup_needed )
-                v->arch.hvm.vmx.lbr_flags |= LBR_FIXUP_LER_TO;
         }
 
-        __vmwrite(GUEST_IA32_DEBUGCTL, msr_content);
+        __vmwrite(GUEST_LBR_CTL, msr_content);
         break;
 
     case MSR_IA32_MISC_ENABLE:

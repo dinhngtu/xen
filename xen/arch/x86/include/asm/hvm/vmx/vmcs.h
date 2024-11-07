@@ -229,6 +229,7 @@ extern u32 vmx_pin_based_exec_control;
 #define VM_EXIT_LOAD_HOST_EFER          0x00200000
 #define VM_EXIT_SAVE_PREEMPT_TIMER      0x00400000
 #define VM_EXIT_CLEAR_BNDCFGS           0x00800000
+#define VM_EXIT_CLEAR_GUEST_LBR_CTL     0x04000000
 extern u32 vmx_vmexit_control;
 
 #define VM_ENTRY_IA32E_MODE             0x00000200
@@ -238,6 +239,7 @@ extern u32 vmx_vmexit_control;
 #define VM_ENTRY_LOAD_GUEST_PAT         0x00004000
 #define VM_ENTRY_LOAD_GUEST_EFER        0x00008000
 #define VM_ENTRY_LOAD_BNDCFGS           0x00010000
+#define VM_ENTRY_LOAD_GUEST_LBR_CTL     0x00200000
 extern u32 vmx_vmentry_control;
 
 #define SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES 0x00000001U
@@ -391,6 +393,10 @@ extern u64 vmx_ept_vpid_cap;
 #define cpu_has_vmx_notify_vm_exiting \
     (IS_ENABLED(CONFIG_INTEL_VMX) && \
      vmx_secondary_exec_control & SECONDARY_EXEC_NOTIFY_VM_EXITING)
+#define cpu_has_vmx_guest_lbr_ctl \
+    (IS_ENABLED(CONFIG_INTEL_VMX) && \
+     (vmx_vmexit_control & VM_EXIT_CLEAR_GUEST_LBR_CTL) && \
+     (vmx_vmentry_control & VM_ENTRY_LOAD_GUEST_LBR_CTL))
 
 #define VMCS_RID_TYPE_MASK              0x80000000U
 
@@ -406,7 +412,7 @@ extern u64 vmx_ept_vpid_cap;
 #define VMX_BASIC_DUAL_MONITOR          (1ULL << 49)
 #define VMX_BASIC_MEMORY_TYPE_MASK      (0xfULL << 50)
 #define VMX_BASIC_INS_OUT_INFO          (1ULL << 54)
-/* 
+/*
  * bit 55 of IA32_VMX_BASIC MSR, indicating whether any VMX controls that
  * default to 1 may be cleared to 0.
  */
@@ -480,6 +486,8 @@ enum vmcs_field {
     GUEST_PDPTE0                    = 0x0000280a,
 #define GUEST_PDPTE(n) (GUEST_PDPTE0 + (n) * 2) /* n = 0...3 */
     GUEST_BNDCFGS                   = 0x00002812,
+    GUEST_RTIT_CTL                  = 0x00002814,
+    GUEST_LBR_CTL                   = 0x00002816,
     HOST_PAT                        = 0x00002c00,
     HOST_EFER                       = 0x00002c02,
     HOST_PERF_GLOBAL_CTRL           = 0x00002c04,
