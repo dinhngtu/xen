@@ -219,6 +219,7 @@ static void __init vmx_display_features(void)
     P(cpu_has_vmx_bus_lock_detection, "Bus Lock Detection");
     P(cpu_has_vmx_notify_vm_exiting, "Notify VM Exit");
     P(cpu_has_vmx_virt_spec_ctrl, "Virtualize SPEC_CTRL");
+    P(cpu_has_vmx_guest_lbr_ctl, "Guest LBR control");
 #undef P
 
     if ( !printed )
@@ -464,7 +465,8 @@ static int vmx_init_vmcs_config(bool bsp)
 
     min = VM_EXIT_ACK_INTR_ON_EXIT;
     opt = (VM_EXIT_SAVE_GUEST_PAT | VM_EXIT_LOAD_HOST_PAT |
-           VM_EXIT_LOAD_HOST_EFER | VM_EXIT_CLEAR_BNDCFGS);
+           VM_EXIT_LOAD_HOST_EFER | VM_EXIT_CLEAR_BNDCFGS |
+           VM_EXIT_CLEAR_GUEST_LBR_CTL);
     min |= VM_EXIT_IA32E_MODE;
     if ( opt_force_software_vmcs_shadow )
         opt &= ~VM_EXIT_LOAD_HOST_EFER;
@@ -511,7 +513,7 @@ static int vmx_init_vmcs_config(bool bsp)
 
     min = 0;
     opt = (VM_ENTRY_LOAD_GUEST_PAT | VM_ENTRY_LOAD_GUEST_EFER |
-           VM_ENTRY_LOAD_BNDCFGS);
+           VM_ENTRY_LOAD_BNDCFGS | VM_ENTRY_LOAD_GUEST_LBR_CTL);
     if ( opt_force_software_vmcs_shadow )
         opt &= ~VM_ENTRY_LOAD_GUEST_EFER;
 
@@ -751,16 +753,16 @@ static int _vmx_cpu_up(bool bsp)
 
     BUG_ON(!(read_cr4() & X86_CR4_VMXE));
 
-    /* 
-     * Ensure the current processor operating mode meets 
-     * the requred CRO fixed bits in VMX operation. 
+    /*
+     * Ensure the current processor operating mode meets
+     * the requred CRO fixed bits in VMX operation.
      */
     cr0 = read_cr0();
     rdmsrl(MSR_IA32_VMX_CR0_FIXED0, vmx_cr0_fixed0);
     rdmsrl(MSR_IA32_VMX_CR0_FIXED1, vmx_cr0_fixed1);
     if ( (~cr0 & vmx_cr0_fixed0) || (cr0 & ~vmx_cr0_fixed1) )
     {
-        printk("CPU%d: some settings of host CR0 are " 
+        printk("CPU%d: some settings of host CR0 are "
                "not allowed in VMX operation.\n", cpu);
         return -EINVAL;
     }
@@ -1172,7 +1174,7 @@ static int construct_vmcs(struct vcpu *v)
     else
     {
         v->arch.hvm.vmx.secondary_exec_control &=
-            ~(SECONDARY_EXEC_ENABLE_EPT | 
+            ~(SECONDARY_EXEC_ENABLE_EPT |
               SECONDARY_EXEC_UNRESTRICTED_GUEST |
               SECONDARY_EXEC_ENABLE_INVPCID);
         vmexit_ctl &= ~(VM_EXIT_SAVE_GUEST_PAT |
@@ -1352,6 +1354,9 @@ static int construct_vmcs(struct vcpu *v)
     v->arch.hvm.vmx.exception_bitmap = HVM_TRAP_MASK
               | (paging_mode_hap(d) ? 0 : (1U << TRAP_page_fault))
               | (v->arch.fully_eager_fpu ? 0 : (1U << TRAP_no_device));
+
+    if ( cpu_has_vmx_guest_lbr_ctl )
+        __vmwrite(GUEST_LBR_CTL, 0);
 
     if ( cpu_has_vmx_notify_vm_exiting )
         __vmwrite(NOTIFY_WINDOW, vm_notify_window);
@@ -1963,7 +1968,7 @@ void cf_check vmx_do_resume(void)
         hvm_migrate_pirqs(v);
         vmx_set_host_env(v);
         /*
-         * Both n1 VMCS and n2 VMCS need to update the host environment after 
+         * Both n1 VMCS and n2 VMCS need to update the host environment after
          * VCPU migration. The environment of current VMCS is updated in place,
          * but the action of another VMCS is deferred till it is switched in.
          */
@@ -2098,6 +2103,8 @@ void vmcs_dump_vcpu(struct vcpu *v)
            vmr32(GUEST_PREEMPTION_TIMER), vmr32(GUEST_SMBASE));
     printk("DebugCtl = 0x%016lx  DebugExceptions = 0x%016lx\n",
            vmr(GUEST_IA32_DEBUGCTL), vmr(GUEST_PENDING_DBG_EXCEPTIONS));
+    if ( vmentry_ctl & VM_ENTRY_LOAD_GUEST_LBR_CTL )
+        printk("LbrCtl = 0x%016lx\n", vmr(GUEST_LBR_CTL));
     if ( vmentry_ctl & (VM_ENTRY_LOAD_PERF_GLOBAL_CTRL | VM_ENTRY_LOAD_BNDCFGS) )
         printk("PerfGlobCtl = 0x%016lx  BndCfgS = 0x%016lx\n",
                vmr(GUEST_PERF_GLOBAL_CTRL), vmr(GUEST_BNDCFGS));
@@ -2190,7 +2197,7 @@ static void cf_check vmcs_dump(unsigned char ch)
 {
     struct domain *d;
     struct vcpu *v;
-    
+
     printk("*********** VMCS Areas **************\n");
 
     rcu_read_lock(&domlist_read_lock);
