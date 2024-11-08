@@ -400,67 +400,69 @@ void vmx_pi_hooks_deassign(struct domain *d)
 
 static const struct lbr_info {
     u32 base, count;
+    u64 initial;
 } p4_lbr[] = {
-    { MSR_P4_LER_FROM_LIP,          1 },
-    { MSR_P4_LER_TO_LIP,            1 },
-    { MSR_P4_LASTBRANCH_TOS,        1 },
-    { MSR_P4_LASTBRANCH_0_FROM_LIP, NUM_MSR_P4_LASTBRANCH_FROM_TO },
-    { MSR_P4_LASTBRANCH_0_TO_LIP,   NUM_MSR_P4_LASTBRANCH_FROM_TO },
-    { 0, 0 }
+    { MSR_P4_LER_FROM_LIP,          1, 0 },
+    { MSR_P4_LER_TO_LIP,            1, 0 },
+    { MSR_P4_LASTBRANCH_TOS,        1, 0 },
+    { MSR_P4_LASTBRANCH_0_FROM_LIP, NUM_MSR_P4_LASTBRANCH_FROM_TO, 0 },
+    { MSR_P4_LASTBRANCH_0_TO_LIP,   NUM_MSR_P4_LASTBRANCH_FROM_TO, 0 },
+    { 0, 0, 0 }
 }, c2_lbr[] = {
-    { MSR_IA32_LASTINTFROMIP,       1 },
-    { MSR_IA32_LASTINTTOIP,         1 },
-    { MSR_C2_LASTBRANCH_TOS,        1 },
-    { MSR_C2_LASTBRANCH_0_FROM_IP,  NUM_MSR_C2_LASTBRANCH_FROM_TO },
-    { MSR_C2_LASTBRANCH_0_TO_IP,    NUM_MSR_C2_LASTBRANCH_FROM_TO },
-    { 0, 0 }
+    { MSR_IA32_LASTINTFROMIP,       1, 0 },
+    { MSR_IA32_LASTINTTOIP,         1, 0 },
+    { MSR_C2_LASTBRANCH_TOS,        1, 0 },
+    { MSR_C2_LASTBRANCH_0_FROM_IP,  NUM_MSR_C2_LASTBRANCH_FROM_TO, 0 },
+    { MSR_C2_LASTBRANCH_0_TO_IP,    NUM_MSR_C2_LASTBRANCH_FROM_TO, 0 },
+    { 0, 0, 0 }
 }, nh_lbr[] = {
-    { MSR_IA32_LASTINTFROMIP,       1 },
-    { MSR_IA32_LASTINTTOIP,         1 },
-    { MSR_NHL_LBR_SELECT,           1 },
-    { MSR_NHL_LASTBRANCH_TOS,       1 },
-    { MSR_P4_LASTBRANCH_0_FROM_LIP, NUM_MSR_P4_LASTBRANCH_FROM_TO },
-    { MSR_P4_LASTBRANCH_0_TO_LIP,   NUM_MSR_P4_LASTBRANCH_FROM_TO },
-    { 0, 0 }
+    { MSR_IA32_LASTINTFROMIP,       1, 0 },
+    { MSR_IA32_LASTINTTOIP,         1, 0 },
+    { MSR_NHL_LBR_SELECT,           1, 0 },
+    { MSR_NHL_LASTBRANCH_TOS,       1, 0 },
+    { MSR_P4_LASTBRANCH_0_FROM_LIP, NUM_MSR_P4_LASTBRANCH_FROM_TO, 0 },
+    { MSR_P4_LASTBRANCH_0_TO_LIP,   NUM_MSR_P4_LASTBRANCH_FROM_TO, 0 },
+    { 0, 0, 0 }
 }, sk_lbr[] = {
-    { MSR_IA32_LASTINTFROMIP,       1 },
-    { MSR_IA32_LASTINTTOIP,         1 },
-    { MSR_NHL_LBR_SELECT,           1 },
-    { MSR_NHL_LASTBRANCH_TOS,       1 },
-    { MSR_SKL_LASTBRANCH_0_FROM_IP, NUM_MSR_SKL_LASTBRANCH },
-    { MSR_SKL_LASTBRANCH_0_TO_IP,   NUM_MSR_SKL_LASTBRANCH },
-    { MSR_SKL_LASTBRANCH_0_INFO,    NUM_MSR_SKL_LASTBRANCH },
-    { 0, 0 }
+    { MSR_IA32_LASTINTFROMIP,       1, 0 },
+    { MSR_IA32_LASTINTTOIP,         1, 0 },
+    { MSR_NHL_LBR_SELECT,           1, 0 },
+    { MSR_NHL_LASTBRANCH_TOS,       1, 0 },
+    { MSR_SKL_LASTBRANCH_0_FROM_IP, NUM_MSR_SKL_LASTBRANCH, 0 },
+    { MSR_SKL_LASTBRANCH_0_TO_IP,   NUM_MSR_SKL_LASTBRANCH, 0 },
+    { MSR_SKL_LASTBRANCH_0_INFO,    NUM_MSR_SKL_LASTBRANCH, 0 },
+    { 0, 0, 0 }
 }, at_lbr[] = {
-    { MSR_IA32_LASTINTFROMIP,       1 },
-    { MSR_IA32_LASTINTTOIP,         1 },
-    { MSR_C2_LASTBRANCH_TOS,        1 },
-    { MSR_C2_LASTBRANCH_0_FROM_IP,  NUM_MSR_ATOM_LASTBRANCH_FROM_TO },
-    { MSR_C2_LASTBRANCH_0_TO_IP,    NUM_MSR_ATOM_LASTBRANCH_FROM_TO },
-    { 0, 0 }
+    { MSR_IA32_LASTINTFROMIP,       1, 0 },
+    { MSR_IA32_LASTINTTOIP,         1, 0 },
+    { MSR_C2_LASTBRANCH_TOS,        1, 0 },
+    { MSR_C2_LASTBRANCH_0_FROM_IP,  NUM_MSR_ATOM_LASTBRANCH_FROM_TO, 0 },
+    { MSR_C2_LASTBRANCH_0_TO_IP,    NUM_MSR_ATOM_LASTBRANCH_FROM_TO, 0 },
+    { 0, 0, 0 }
 }, sm_lbr[] = {
-    { MSR_IA32_LASTINTFROMIP,       1 },
-    { MSR_IA32_LASTINTTOIP,         1 },
-    { MSR_SM_LBR_SELECT,            1 },
-    { MSR_SM_LASTBRANCH_TOS,        1 },
-    { MSR_C2_LASTBRANCH_0_FROM_IP,  NUM_MSR_ATOM_LASTBRANCH_FROM_TO },
-    { MSR_C2_LASTBRANCH_0_TO_IP,    NUM_MSR_ATOM_LASTBRANCH_FROM_TO },
-    { 0, 0 }
+    { MSR_IA32_LASTINTFROMIP,       1, 0 },
+    { MSR_IA32_LASTINTTOIP,         1, 0 },
+    { MSR_SM_LBR_SELECT,            1, 0 },
+    { MSR_SM_LASTBRANCH_TOS,        1, 0 },
+    { MSR_C2_LASTBRANCH_0_FROM_IP,  NUM_MSR_ATOM_LASTBRANCH_FROM_TO, 0 },
+    { MSR_C2_LASTBRANCH_0_TO_IP,    NUM_MSR_ATOM_LASTBRANCH_FROM_TO, 0 },
+    { 0, 0, 0 }
 }, gm_lbr[] = {
-    { MSR_IA32_LASTINTFROMIP,       1 },
-    { MSR_IA32_LASTINTTOIP,         1 },
-    { MSR_SM_LBR_SELECT,            1 },
-    { MSR_SM_LASTBRANCH_TOS,        1 },
-    { MSR_GM_LASTBRANCH_0_FROM_IP,  NUM_MSR_GM_LASTBRANCH_FROM_TO },
-    { MSR_GM_LASTBRANCH_0_TO_IP,    NUM_MSR_GM_LASTBRANCH_FROM_TO },
-    { 0, 0 }
+    { MSR_IA32_LASTINTFROMIP,       1, 0 },
+    { MSR_IA32_LASTINTTOIP,         1, 0 },
+    { MSR_SM_LBR_SELECT,            1, 0 },
+    { MSR_SM_LASTBRANCH_TOS,        1, 0 },
+    { MSR_GM_LASTBRANCH_0_FROM_IP,  NUM_MSR_GM_LASTBRANCH_FROM_TO, 0 },
+    { MSR_GM_LASTBRANCH_0_TO_IP,    NUM_MSR_GM_LASTBRANCH_FROM_TO, 0 },
+    { 0, 0, 0 }
 }, architectural_lbr[] = {
-    { MSR_IA32_LASTINTFROMIP,        1 },
-    { MSR_IA32_LASTINTTOIP,          1 },
-    { MSR_IA32_LER_INFO,             1 },
-    { MSR_IA32_LASTBRANCH_0_FROM_IP, NUM_MSR_ARCH_LASTBRANCH_FROM_TO },
-    { MSR_IA32_LASTBRANCH_0_TO_IP,   NUM_MSR_ARCH_LASTBRANCH_FROM_TO },
-    { 0, 0 }
+    { MSR_IA32_LASTBRANCH_DEPTH,     1, NUM_MSR_ARCH_LASTBRANCH_FROM_TO },
+    { MSR_IA32_LASTINTFROMIP,        1, 0 },
+    { MSR_IA32_LASTINTTOIP,          1, 0 },
+    { MSR_IA32_LER_INFO,             1, 0 },
+    { MSR_IA32_LASTBRANCH_0_FROM_IP, NUM_MSR_ARCH_LASTBRANCH_FROM_TO, 0 },
+    { MSR_IA32_LASTBRANCH_0_TO_IP,   NUM_MSR_ARCH_LASTBRANCH_FROM_TO, 0 },
+    { 0, 0, 0 }
 };
 static const struct lbr_info *__ro_after_init model_specific_lbr;
 
@@ -3553,31 +3555,15 @@ void vmx_vlapic_msr_changed(struct vcpu *v)
     vmx_vmcs_exit(v);
 }
 
-static int vmx_lbr_insert(
-    struct vcpu *v, const struct lbr_info *lbr, bool is_architectural)
+static int vmx_lbr_insert(struct vcpu *v, const struct lbr_info *lbr)
 {
-    int rc;
-
-    if ( is_architectural )
-    {
-        rc = vmx_add_guest_msr(v, MSR_IA32_LASTBRANCH_DEPTH,
-            NUM_MSR_ARCH_LASTBRANCH_FROM_TO);
-
-        if ( unlikely(rc) )
-        {
-            return rc;
-        }
-
-        vmx_clear_msr_intercept(v, MSR_IA32_LASTBRANCH_DEPTH, VMX_MSR_RW);
-    }
-
     for ( ; lbr->count; lbr++ )
     {
         unsigned int i;
 
         for ( i = 0; i < lbr->count; i++ )
         {
-            rc = vmx_add_guest_msr(v, lbr->base + i, 0);
+            int rc = vmx_add_guest_msr(v, lbr->base + i, lbr->initial);
 
             if ( unlikely(rc) )
             {
@@ -3709,7 +3695,7 @@ static int cf_check vmx_msr_write_intercept(
         if ( !(v->arch.hvm.vmx.lbr_flags & LBR_MSRS_INSERTED) &&
              (msr_content & IA32_DEBUGCTLMSR_LBR) )
         {
-            int rc = vmx_lbr_insert(v, model_specific_lbr, false);
+            int rc = vmx_lbr_insert(v, model_specific_lbr);
 
             if ( unlikely(rc) )
             {
@@ -3732,16 +3718,16 @@ static int cf_check vmx_msr_write_intercept(
 
         if ( !(v->arch.hvm.vmx.lbr_flags & LBR_MSRS_INSERTED) &&
              (msr_content & LASTBRANCH_CTL_LBREN) )
-                {
-            int rc = vmx_lbr_insert(v, architectural_lbr, true);
+        {
+            int rc = vmx_lbr_insert(v, architectural_lbr);
 
-                    if ( unlikely(rc) )
-                    {
-                        gprintk(XENLOG_ERR,
-                                "Guest load/save list error %d\n", rc);
-                        domain_crash(v->domain);
-                        return X86EMUL_OKAY;
-                    }
+            if ( unlikely(rc) )
+            {
+                gprintk(XENLOG_ERR,
+                        "Guest load/save list error %d\n", rc);
+                domain_crash(v->domain);
+                return X86EMUL_OKAY;
+            }
         }
 
         __vmwrite(GUEST_LBR_CTL, msr_content);
