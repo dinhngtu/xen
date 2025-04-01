@@ -58,6 +58,19 @@
 
 /*#define DEBUG_PM_CX*/
 
+static always_inline void monitor(
+    const void *addr, unsigned int ecx, unsigned int edx)
+{
+    asm volatile ( "monitor"
+                   :: "a" (addr), "c" (ecx), "d" (edx) );
+}
+
+static always_inline void mwait(unsigned int eax, unsigned int ecx)
+{
+    asm volatile ( "mwait"
+                   :: "a" (eax), "c" (ecx) );
+}
+
 #define GET_HW_RES_IN_NS(msr, val) \
     do { rdmsrl(msr, val); val = tsc_ticks2ns(val); } while( 0 )
 #define GET_MC6_RES(val)  GET_HW_RES_IN_NS(0x664, val)
@@ -461,7 +474,7 @@ void mwait_idle_with_hints(unsigned int eax, unsigned int ecx)
         mb();
     }
 
-    __monitor(monitor_addr, 0, 0);
+    monitor(monitor_addr, 0, 0);
     smp_mb();
 
     /*
@@ -475,7 +488,7 @@ void mwait_idle_with_hints(unsigned int eax, unsigned int ecx)
         cpumask_set_cpu(cpu, &cpuidle_mwait_flags);
 
         spec_ctrl_enter_idle(info);
-        __mwait(eax, ecx);
+        mwait(eax, ecx);
         spec_ctrl_exit_idle(info);
 
         cpumask_clear_cpu(cpu, &cpuidle_mwait_flags);
@@ -905,9 +918,9 @@ void acpi_dead_idle(void)
              */
             mb();
             clflush(mwait_ptr);
-            __monitor(mwait_ptr, 0, 0);
+            monitor(mwait_ptr, 0, 0);
             mb();
-            __mwait(cx->address, 0);
+            mwait(cx->address, 0);
         }
     }
     else if ( (current_cpu_data.x86_vendor &
