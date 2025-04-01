@@ -61,6 +61,9 @@
 static always_inline void monitor(
     const void *addr, unsigned int ecx, unsigned int edx)
 {
+    alternative_input("", "clflush (%[addr])", X86_BUG_CLFLUSH_MONITOR,
+                      [addr] "a" (addr));
+
     asm volatile ( "monitor"
                    :: "a" (addr), "c" (ecx), "d" (edx) );
 }
@@ -466,13 +469,6 @@ void mwait_idle_with_hints(unsigned int eax, unsigned int ecx)
     unsigned int cpu = smp_processor_id();
     s_time_t expires = per_cpu(timer_deadline, cpu);
     const void *monitor_addr = &mwait_wakeup(cpu);
-
-    if ( boot_cpu_has(X86_FEATURE_CLFLUSH_MONITOR) )
-    {
-        mb();
-        clflush(monitor_addr);
-        mb();
-    }
 
     monitor(monitor_addr, 0, 0);
     smp_mb();
@@ -907,19 +903,7 @@ void acpi_dead_idle(void)
 
         while ( 1 )
         {
-            /*
-             * 1. The CLFLUSH is a workaround for erratum AAI65 for
-             * the Xeon 7400 series.  
-             * 2. The WBINVD is insufficient due to the spurious-wakeup
-             * case where we return around the loop.
-             * 3. Unlike wbinvd, clflush is a light weight but not serializing 
-             * instruction, hence memory fence is necessary to make sure all 
-             * load/store visible before flush cache line.
-             */
-            mb();
-            clflush(mwait_ptr);
             monitor(mwait_ptr, 0, 0);
-            mb();
             mwait(cx->address, 0);
         }
     }
