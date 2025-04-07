@@ -54,6 +54,13 @@ CFLAGS += -fno-jump-tables
 export CONFIG_INDIRECT_THUNK=y
 endif
 
+# Compile with return thunk support if available.
+ifneq ($(call cc-option,$(CC),-mfunction-return=thunk-extern,n),n)
+CFLAGS += -mfunction-return=thunk-extern
+CFLAGS += -DCONFIG_RETURN_THUNK
+export CONFIG_RETURN_THUNK=y
+endif
+
 # If supported by the compiler, reduce stack alignment to 8 bytes. But allow
 # this to be overridden elsewhere.
 $(call cc-option-add,CFLAGS-stack-boundary,CC,-mpreferred-stack-boundary=3)

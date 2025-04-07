@@ -40,4 +40,10 @@ asm ( "\t.include \"asm/indirect_thunk_asm.h\"" );
     .endif
 .endm
 
+#ifdef CONFIG_RETURN_THUNK
+# define RET jmp __x86_return_thunk
+#else
+# define RET ret
+#endif
+
 #endif

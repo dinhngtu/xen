@@ -88,6 +88,17 @@ config HAS_CHECKPOLICY
 
 menu "Speculative hardening"
 
+config RETURN_THUNK
+	bool "Out-of-line Returns"
+	depends on CC_HAS_RETURN_THUNK
+	default INDIRECT_THUNK
+	help
+	  Compile Xen with out-of-line returns.
+
+	  This allows Xen to mitigate a variety of speculative vulnerabilities
+	  by choosing a hardware-dependent instruction sequence to implement
+	  function returns safely.
+
 config SPECULATIVE_HARDEN_ARRAY
 	bool "Speculative Array Hardening"
 	default y

@@ -1,4 +1,7 @@
         .file __FILE__
+
+#include <asm/asm_defns.h>
+
         .text
         .code64
 
@@ -98,7 +101,7 @@ ENTRY(__ret_point)
         LOAD_GREG(13)
         LOAD_GREG(14)
         LOAD_GREG(15)
-        ret 
+        RET
 
 .data
         .align 16

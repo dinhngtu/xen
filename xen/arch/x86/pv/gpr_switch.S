@@ -37,7 +37,7 @@ ENTRY(host_to_guest_gpr_switch)
         movq  %rcx,8(%rsp)
         movq  UREGS_rcx(%rdi), %rcx
         movq  UREGS_rdi(%rdi), %rdi
-        ret
+        RET
 
 ENTRY(guest_to_host_gpr_switch)
         pushq %rdi
@@ -64,4 +64,4 @@ ENTRY(guest_to_host_gpr_switch)
         popq  %rbx
         movq  %rcx, UREGS_rcx(%rdi)
         popq  %rcx
-        ret
+        RET
