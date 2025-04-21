@@ -40,6 +40,7 @@ XEN_CPUFEATURE(SC_RSB_IDLE,       X86_SYNTH(24)) /* RSB overwrite needed for idl
 XEN_CPUFEATURE(SC_VERW_IDLE,      X86_SYNTH(25)) /* VERW used by Xen for idle */
 XEN_CPUFEATURE(IBPB_ENTRY_PV,     X86_SYNTH(26)) /* MSR_PRED_CMD used by Xen for PV */
 XEN_CPUFEATURE(IBPB_ENTRY_HVM,    X86_SYNTH(27)) /* MSR_PRED_CMD used by Xen for HVM */
+XEN_CPUFEATURE(USE_VMCALL,        X86_SYNTH(28)) /* Use VMCALL instead of VMMCALL */
 
 /* Bug words follow the synthetic words. */
 #define X86_NR_BUG 1
