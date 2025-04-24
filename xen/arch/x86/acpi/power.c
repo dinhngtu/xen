@@ -302,6 +302,7 @@ static int enter_state(u32 state)
     }
 
     update_mcu_opt_ctrl();
+    update_pb_opt_ctrl();
 
  done:
     spin_debug_enable();

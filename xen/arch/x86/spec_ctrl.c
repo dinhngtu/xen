@@ -94,6 +94,8 @@ static bool __read_mostly opt_verw_mmio;
 static int8_t __initdata opt_gds_mit = -1;
 static int8_t __initdata opt_div_scrub = -1;
 
+static __initdata bool opt_ibpb_alt;
+
 static int __init parse_spec_ctrl(const char *s)
 {
     const char *ss;
@@ -351,6 +353,8 @@ static int __init parse_spec_ctrl(const char *s)
             opt_gds_mit = val;
         else if ( (val = parse_boolean("div-scrub", s, ss)) >= 0 )
             opt_div_scrub = val;
+        else if ( (val = parse_boolean("ibpb-alt", s, ss)) >= 0 )
+            opt_ibpb_alt = val;
         else
             rc = -EINVAL;
 
@@ -2414,6 +2418,9 @@ void __init init_speculation_mitigations(void)
         wrmsrl(MSR_SPEC_CTRL, val);
         info->last_spec_ctrl = val;
     }
+
+    if ( boot_cpu_has(X86_FEATURE_PB_OPT_CTRL) )
+        set_in_pb_opt_ctrl(PB_OPT_IBPB_ALT, opt_ibpb_alt);
 }
 
 static void __init __maybe_unused build_assertions(void)
