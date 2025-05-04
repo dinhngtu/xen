@@ -91,7 +91,7 @@ static io_emul_stub_t *io_emul_stub_setup(struct priv_op_ctxt *ctxt, u8 opcode,
         /* imm8 or nop */
         ctxt->io_emul_stub[7] = !(opcode & 8) ? port : 0x90;
         /* ret (jumps to guest_to_host_gpr_switch) */
-        ctxt->io_emul_stub[8] = 0xc3;
+        place_ret(&ctxt->io_emul_stub[8]);
     }
 
     BUILD_BUG_ON(STUB_BUF_SIZE / 2 < MAX(9, /* Default emul stub */

@@ -19,7 +19,6 @@ static bool ioemul_handle_proliant_quirk(
         0xa8, 0x80, /*    test $0x80, %al */
         0x75, 0xfb, /*    jnz 1b          */
         0x9d,       /*    popf            */
-        0xc3,       /*    ret             */
     };
     uint16_t port = regs->dx;
     uint8_t value = regs->al;
@@ -28,6 +27,7 @@ static bool ioemul_handle_proliant_quirk(
         return false;
 
     memcpy(io_emul_stub, stub, sizeof(stub));
+    place_ret(io_emul_stub + sizeof(stub));
     BUILD_BUG_ON(IOEMUL_QUIRK_STUB_BYTES < sizeof(stub));
 
     return true;

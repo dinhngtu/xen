@@ -1448,36 +1448,42 @@ static inline bool fpu_check_write(void)
 
 #define emulate_fpu_insn_memdst(opc, ext, arg)                          \
 do {                                                                    \
+    void *_p = get_stub(stub);                                          \
     /* ModRM: mod=0, reg=ext, rm=0, i.e. a (%rax) operand */            \
     insn_bytes = 2;                                                     \
-    memcpy(get_stub(stub),                                              \
-           ((uint8_t[]){ opc, ((ext) & 7) << 3, 0xc3 }), 3);            \
+    memcpy(_p, ((uint8_t[]){ opc, ((ext) & 7) << 3 }), 2); _p += 2;     \
+    place_ret(_p);                                                      \
     invoke_stub("", "", "+m" (arg) : "a" (&(arg)));                     \
     put_stub(stub);                                                     \
 } while (0)
 
 #define emulate_fpu_insn_memsrc(opc, ext, arg)                          \
 do {                                                                    \
+    void *_p = get_stub(stub);                                          \
     /* ModRM: mod=0, reg=ext, rm=0, i.e. a (%rax) operand */            \
-    memcpy(get_stub(stub),                                              \
-           ((uint8_t[]){ opc, ((ext) & 7) << 3, 0xc3 }), 3);            \
+    memcpy(_p, ((uint8_t[]){ opc, ((ext) & 7) << 3 }), 2); _p += 2;     \
+    place_ret(_p);                                                      \
     invoke_stub("", "", "=m" (dummy) : "m" (arg), "a" (&(arg)));        \
     put_stub(stub);                                                     \
 } while (0)
 
 #define emulate_fpu_insn_stub(bytes...)                                 \
 do {                                                                    \
+    void *_p = get_stub(stub);                                          \
     unsigned int nr_ = sizeof((uint8_t[]){ bytes });                    \
-    memcpy(get_stub(stub), ((uint8_t[]){ bytes, 0xc3 }), nr_ + 1);      \
+    memcpy(_p, ((uint8_t[]){ bytes }), nr_); _p += nr_;                 \
+    place_ret(_p);                                                      \
     invoke_stub("", "", "=m" (dummy) : "i" (0));                        \
     put_stub(stub);                                                     \
 } while (0)
 
 #define emulate_fpu_insn_stub_eflags(bytes...)                          \
 do {                                                                    \
+    void *_p = get_stub(stub);                                          \
     unsigned int nr_ = sizeof((uint8_t[]){ bytes });                    \
     unsigned long tmp_;                                                 \
-    memcpy(get_stub(stub), ((uint8_t[]){ bytes, 0xc3 }), nr_ + 1);      \
+    memcpy(_p, ((uint8_t[]){ bytes }), nr_); _p += nr_;                 \
+    place_ret(_p);                                                      \
     invoke_stub(_PRE_EFLAGS("[eflags]", "[mask]", "[tmp]"),             \
                 _POST_EFLAGS("[eflags]", "[mask]", "[tmp]"),            \
                 [eflags] "+g" (_regs.eflags), [tmp] "=&r" (tmp_)        \
@@ -3706,7 +3712,7 @@ x86_emulate(
         stb[3] = 0x91;
         stb[4] = evex.opmsk << 3;
         insn_bytes = 5;
-        stb[5] = 0xc3;
+        place_ret(&stb[5]);
 
         invoke_stub("", "", "+m" (op_mask) : "a" (&op_mask));
 
@@ -6364,7 +6370,7 @@ x86_emulate(
             evex.lr = 0;
         opc[1] = (modrm & 0x38) | 0xc0;
         insn_bytes = EVEX_PFX_BYTES + 2;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         copy_EVEX(opc, evex);
         invoke_stub("", "", "=g" (dummy) : "a" (src.val));
@@ -6431,7 +6437,7 @@ x86_emulate(
             insn_bytes = PFX_BYTES + 2;
             copy_REX_VEX(opc, rex_prefix, vex);
         }
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         ea.reg = decode_gpr(&_regs, modrm_reg);
         invoke_stub("", "", "=a" (*ea.reg) : "c" (mmvalp), "m" (*mmvalp));
@@ -6500,7 +6506,7 @@ x86_emulate(
             insn_bytes = PFX_BYTES + 2;
             copy_REX_VEX(opc, rex_prefix, vex);
         }
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         invoke_stub(_PRE_EFLAGS("[eflags]", "[mask]", "[tmp]"),
                     _POST_EFLAGS("[eflags]", "[mask]", "[tmp]"),
@@ -6721,7 +6727,7 @@ x86_emulate(
         opc[1] = modrm & 0xc7;
         insn_bytes = PFX_BYTES + 2;
     simd_0f_to_gpr:
-        opc[insn_bytes - PFX_BYTES] = 0xc3;
+        place_ret(&opc[insn_bytes - PFX_BYTES]);
 
         generate_exception_if(ea.type != OP_REG, EXC_UD);
 
@@ -7106,7 +7112,7 @@ x86_emulate(
             vex.w = 0;
         opc[1] = modrm & 0x38;
         insn_bytes = PFX_BYTES + 2;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         copy_REX_VEX(opc, rex_prefix, vex);
         invoke_stub("", "", "+m" (src.val) : "a" (&src.val));
@@ -7132,7 +7138,7 @@ x86_emulate(
             evex.w = 0;
         opc[1] = modrm & 0x38;
         insn_bytes = EVEX_PFX_BYTES + 2;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         copy_EVEX(opc, evex);
         invoke_stub("", "", "+m" (src.val) : "a" (&src.val));
@@ -7313,7 +7319,7 @@ x86_emulate(
         opc[2] = imm1;
         insn_bytes = PFX_BYTES + 3;
     simd_0f_reg_only:
-        opc[insn_bytes - PFX_BYTES] = 0xc3;
+        place_ret(&opc[insn_bytes - PFX_BYTES]);
 
         copy_REX_VEX(opc, rex_prefix, vex);
         invoke_stub("", "", [dummy_out] "=g" (dummy) : [dummy_in] "i" (0) );
@@ -7618,7 +7624,7 @@ x86_emulate(
         if ( !mode_64bit() )
             vex.w = 0;
         opc[1] = modrm & 0xf8;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         copy_VEX(opc, vex);
         ea.reg = decode_gpr(&_regs, modrm_rm);
@@ -7661,7 +7667,7 @@ x86_emulate(
         if ( !mode_64bit() )
             vex.w = 0;
         opc[1] = modrm & 0xc7;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         copy_VEX(opc, vex);
         invoke_stub("", "", "=a" (dst.val) : [dummy] "i" (0));
@@ -7691,7 +7697,7 @@ x86_emulate(
         opc = init_prefixes(stub);
         opc[0] = b;
         opc[1] = modrm;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         copy_VEX(opc, vex);
         invoke_stub(_PRE_EFLAGS("[eflags]", "[mask]", "[tmp]"),
@@ -8505,7 +8511,7 @@ x86_emulate(
         if ( !mode_64bit() )
             vex.w = 0;
         opc[1] = modrm & 0xc7;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         copy_REX_VEX(opc, rex_prefix, vex);
         invoke_stub("", "", "=a" (ea.val) : [dummy] "i" (0));
@@ -8636,7 +8642,7 @@ x86_emulate(
             opc[1] &= 0x38;
         }
         insn_bytes = PFX_BYTES + 2;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
         if ( vex.opcx == vex_none )
         {
             /* Cover for extra prefix byte. */
@@ -8915,7 +8921,7 @@ x86_emulate(
         pvex->b = !mode_64bit() || (vex.reg >> 3);
         opc[1] = 0xc0 | (~vex.reg & 7);
         pvex->reg = 0xf;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         invoke_stub("", "", "=a" (ea.val) : [dummy] "i" (0));
         put_stub(stub);
@@ -9161,7 +9167,7 @@ x86_emulate(
             evex.w = 0;
         opc[1] = modrm & 0xf8;
         insn_bytes = EVEX_PFX_BYTES + 2;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         copy_EVEX(opc, evex);
         invoke_stub("", "", "=g" (dummy) : "a" (src.val));
@@ -9256,7 +9262,7 @@ x86_emulate(
         pvex->b = 1;
         opc[1] = (modrm_reg & 7) << 3;
         pvex->reg = 0xf;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         invoke_stub("", "", "=m" (*mmvalp) : "a" (mmvalp));
 
@@ -9326,7 +9332,7 @@ x86_emulate(
         pvex->b = 1;
         opc[1] = (modrm_reg & 7) << 3;
         pvex->reg = 0xf;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         invoke_stub("", "", "+m" (*mmvalp) : "a" (mmvalp));
 
@@ -9382,7 +9388,7 @@ x86_emulate(
         pevex->b = 1;
         opc[1] = (modrm_reg & 7) << 3;
         pevex->RX = 1;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         invoke_stub("", "", "=m" (*mmvalp) : "a" (mmvalp));
 
@@ -9447,7 +9453,7 @@ x86_emulate(
         pevex->b = 1;
         opc[1] = (modrm_reg & 7) << 3;
         pevex->RX = 1;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         invoke_stub("", "", "+m" (*mmvalp) : "a" (mmvalp));
 
@@ -9461,7 +9467,7 @@ x86_emulate(
         opc[2] = 0x90;
         /* Use (%rax) as source. */
         opc[3] = evex.opmsk << 3;
-        opc[4] = 0xc3;
+        place_ret(&opc[4]);
 
         invoke_stub("", "", "+m" (op_mask) : "a" (&op_mask));
         put_stub(stub);
@@ -9555,7 +9561,7 @@ x86_emulate(
         pevex->b = 1;
         opc[1] = (modrm_reg & 7) << 3;
         pevex->RX = 1;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         invoke_stub("", "", "=m" (*mmvalp) : "a" (mmvalp));
 
@@ -9612,7 +9618,7 @@ x86_emulate(
         opc[2] = 0x90;
         /* Use (%rax) as source. */
         opc[3] = evex.opmsk << 3;
-        opc[4] = 0xc3;
+        place_ret(&opc[4]);
 
         invoke_stub("", "", "+m" (op_mask) : "a" (&op_mask));
         put_stub(stub);
@@ -9681,7 +9687,7 @@ x86_emulate(
         pevex->r = !mode_64bit() || !(state->sib_index & 0x08);
         pevex->R = !mode_64bit() || !(state->sib_index & 0x10);
         pevex->RX = 1;
-        opc[2] = 0xc3;
+        place_ret(&opc[2]);
 
         invoke_stub("", "", "=m" (index) : "a" (&index));
         put_stub(stub);
@@ -9854,7 +9860,7 @@ x86_emulate(
         pvex->reg = 0xf; /* rAX */
         buf[3] = b;
         buf[4] = 0x09; /* reg=rCX r/m=(%rCX) */
-        buf[5] = 0xc3;
+        place_ret(&buf[5]);
 
         src.reg = decode_vex_gpr(vex.reg, &_regs, ctxt);
         emulate_stub([dst] "=&c" (dst.val), "[dst]" (&src.val), "a" (*src.reg));
@@ -9888,7 +9894,7 @@ x86_emulate(
         pvex->reg = 0xf; /* rAX */
         buf[3] = b;
         buf[4] = (modrm & 0x38) | 0x01; /* r/m=(%rCX) */
-        buf[5] = 0xc3;
+        place_ret(&buf[5]);
 
         dst.reg = decode_vex_gpr(vex.reg, &_regs, ctxt);
         emulate_stub("=&a" (dst.val), "c" (&src.val));
@@ -10055,7 +10061,7 @@ x86_emulate(
             evex.w = vex.w = 0;
         opc[1] = modrm & 0x38;
         opc[2] = imm1;
-        opc[3] = 0xc3;
+        place_ret(&opc[3]);
         if ( vex.opcx == vex_none )
         {
             /* Cover for extra prefix byte. */
@@ -10222,7 +10228,7 @@ x86_emulate(
             insn_bytes = PFX_BYTES + 3;
             copy_VEX(opc, vex);
         }
-        opc[3] = 0xc3;
+        place_ret(&opc[3]);
 
         /* Latch MXCSR - we may need to restore it below. */
         invoke_stub("stmxcsr %[mxcsr]", "",
@@ -10450,7 +10456,7 @@ x86_emulate(
         }
         opc[2] = imm1;
         insn_bytes = PFX_BYTES + 3;
-        opc[3] = 0xc3;
+        place_ret(&opc[3]);
         if ( vex.opcx == vex_none )
         {
             /* Cover for extra prefix byte. */
@@ -10604,7 +10610,7 @@ x86_emulate(
         pxop->reg = 0xf; /* rAX */
         buf[3] = b;
         buf[4] = (modrm & 0x38) | 0x01; /* r/m=(%rCX) */
-        buf[5] = 0xc3;
+        place_ret(&buf[5]);
 
         dst.reg = decode_vex_gpr(vex.reg, &_regs, ctxt);
         emulate_stub([dst] "=&a" (dst.val), "c" (&src.val));
@@ -10709,7 +10715,7 @@ x86_emulate(
         buf[3] = b;
         buf[4] = 0x09; /* reg=rCX r/m=(%rCX) */
         *(uint32_t *)(buf + 5) = imm1;
-        buf[9] = 0xc3;
+        place_ret(&buf[9]);
 
         emulate_stub([dst] "=&c" (dst.val), "[dst]" (&src.val));
 
@@ -10776,12 +10782,12 @@ x86_emulate(
             BUG();
         if ( evex_encoded() )
         {
-            opc[insn_bytes - EVEX_PFX_BYTES] = 0xc3;
+            place_ret(&opc[insn_bytes - EVEX_PFX_BYTES]);
             copy_EVEX(opc, evex);
         }
         else
         {
-            opc[insn_bytes - PFX_BYTES] = 0xc3;
+            place_ret(&opc[insn_bytes - PFX_BYTES]);
             copy_REX_VEX(opc, rex_prefix, vex);
         }
 
