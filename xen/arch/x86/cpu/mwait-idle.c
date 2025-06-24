@@ -751,7 +751,6 @@ static const struct cpuidle_state dnv_cstates[] = {
 static void mwait_idle(void)
 {
 	unsigned int cpu = smp_processor_id();
-	struct cpu_info *info = get_cpu_info();
 	struct acpi_processor_power *power = processor_powers[cpu];
 	struct acpi_processor_cx *cx = NULL;
 	unsigned int eax, next_state, cstate;
@@ -778,6 +777,8 @@ static void mwait_idle(void)
 			pm_idle_save();
 		else
 		{
+			struct cpu_info *info = get_cpu_info();
+
 			spec_ctrl_enter_idle(info);
 			safe_halt();
 			spec_ctrl_exit_idle(info);
@@ -806,11 +807,6 @@ static void mwait_idle(void)
 
 	eax = cx->address;
 	cstate = ((eax >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1;
-
-	if (cx->ibrs_disable) {
-		ASSERT(!cx->irq_enable_early);
-		spec_ctrl_enter_idle(info);
-	}
 
 #if 0 /* XXX Can we/do we need to do something similar on Xen? */
 	/*
@@ -847,10 +843,6 @@ static void mwait_idle(void)
 
 	/* Now back in C0. */
 	update_idle_stats(power, cx, before, after);
-
-	if (cx->ibrs_disable)
-		spec_ctrl_exit_idle(info);
-
 	local_irq_enable();
 
 	if (!(lapic_timer_reliable_states & (1 << cstate)))
