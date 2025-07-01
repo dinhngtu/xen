@@ -431,11 +431,6 @@ static int __init cpu_idle_key_init(void)
 }
 __initcall(cpu_idle_key_init);
 
-bool arch_skip_send_event_check(unsigned int cpu)
-{
-    return false;
-}
-
 void mwait_idle_with_hints(unsigned int eax, unsigned int ecx)
 {
     unsigned int cpu = smp_processor_id();
