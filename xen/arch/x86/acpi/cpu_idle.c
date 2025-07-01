@@ -431,14 +431,8 @@ static int __init cpu_idle_key_init(void)
 }
 __initcall(cpu_idle_key_init);
 
-/* Force sending of a wakeup IPI regardless of mwait usage. */
-bool force_mwait_ipi_wakeup;
-
 bool arch_skip_send_event_check(unsigned int cpu)
 {
-    if ( force_mwait_ipi_wakeup )
-        return false;
-
     return false;
 }
 
