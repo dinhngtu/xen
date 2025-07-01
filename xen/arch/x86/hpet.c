@@ -198,7 +198,6 @@ static int hpet_program_time(struct hpet_event_channel *ch,
 /* Wake up all cpus in the channel mask.  Lock should be held. */
 static void hpet_wake_cpus(struct hpet_event_channel *ch)
 {
-    cpuidle_wakeup_mwait(ch->cpumask);
     cpumask_raise_softirq(ch->cpumask, TIMER_SOFTIRQ);
 }
 
