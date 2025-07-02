@@ -825,12 +825,9 @@ static void mwait_idle(void)
 
 	update_last_cx_stat(power, cx, before);
 
-	if (cx->irq_enable_early)
-		local_irq_enable();
+	mwait_idle_with_hints(eax,
+			      cx->irq_enable_early ? 0 : MWAIT_ECX_INTERRUPT_BREAK);
 
-	mwait_idle_with_hints(eax, MWAIT_ECX_INTERRUPT_BREAK);
-
-	local_irq_disable();
 
 	after = alternative_call(cpuidle_get_tick);
 
