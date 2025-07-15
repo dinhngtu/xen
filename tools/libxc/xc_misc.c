@@ -284,6 +284,11 @@ int xc_get_ucode_revision(xc_interface *xch,
     return 0;
 }
 
+int xc_platform_op(xc_interface *xch, struct xen_platform_op *op)
+{
+    return do_platform_op(xch, op);
+}
+
 int xc_cputopoinfo(xc_interface *xch, unsigned *max_cpus,
                    xc_cputopo_t *cputopo)
 {
