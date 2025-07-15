@@ -348,7 +348,10 @@ static void cmd_write(struct pci_dev *pdev, unsigned int reg,
          */
         modify_bars(pdev, cmd, false);
     else
+    {
         pci_conf_write16(pdev->sbdf, reg, cmd);
+        pdev->memory_enabled = !!(cmd & PCI_COMMAND_MEMORY);
+    }
 }
 
 static void bar_write(struct pci_dev *pdev, unsigned int reg,
