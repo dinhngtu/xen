@@ -34,7 +34,7 @@ static uint32_t control_read(const struct pci_dev *pdev, unsigned int reg,
            (msi->address64 ? PCI_MSI_FLAGS_64BIT : 0);
 }
 
-static void control_write(const struct pci_dev *pdev, unsigned int reg,
+static void control_write(struct pci_dev *pdev, unsigned int reg,
                           uint32_t val, void *data)
 {
     struct vpci_msi *msi = data;
@@ -98,7 +98,7 @@ static uint32_t address_read(const struct pci_dev *pdev, unsigned int reg,
     return msi->address;
 }
 
-static void address_write(const struct pci_dev *pdev, unsigned int reg,
+static void address_write(struct pci_dev *pdev, unsigned int reg,
                           uint32_t val, void *data)
 {
     struct vpci_msi *msi = data;
@@ -119,7 +119,7 @@ static uint32_t address_hi_read(const struct pci_dev *pdev, unsigned int reg,
     return msi->address >> 32;
 }
 
-static void address_hi_write(const struct pci_dev *pdev, unsigned int reg,
+static void address_hi_write(struct pci_dev *pdev, unsigned int reg,
                              uint32_t val, void *data)
 {
     struct vpci_msi *msi = data;
@@ -140,7 +140,7 @@ static uint32_t data_read(const struct pci_dev *pdev, unsigned int reg,
     return msi->data;
 }
 
-static void data_write(const struct pci_dev *pdev, unsigned int reg,
+static void data_write(struct pci_dev *pdev, unsigned int reg,
                        uint32_t val, void *data)
 {
     struct vpci_msi *msi = data;
@@ -159,7 +159,7 @@ static uint32_t mask_read(const struct pci_dev *pdev, unsigned int reg,
     return msi->mask;
 }
 
-static void mask_write(const struct pci_dev *pdev, unsigned int reg,
+static void mask_write(struct pci_dev *pdev, unsigned int reg,
                        uint32_t val, void *data)
 {
     struct vpci_msi *msi = data;

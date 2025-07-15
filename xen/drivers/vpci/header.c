@@ -330,7 +330,7 @@ static int modify_bars(const struct pci_dev *pdev, uint16_t cmd, bool rom_only)
     return 0;
 }
 
-static void cmd_write(const struct pci_dev *pdev, unsigned int reg,
+static void cmd_write(struct pci_dev *pdev, unsigned int reg,
                       uint32_t cmd, void *data)
 {
     uint16_t current_cmd = pci_conf_read16(pdev->sbdf, reg);
@@ -351,7 +351,7 @@ static void cmd_write(const struct pci_dev *pdev, unsigned int reg,
         pci_conf_write16(pdev->sbdf, reg, cmd);
 }
 
-static void bar_write(const struct pci_dev *pdev, unsigned int reg,
+static void bar_write(struct pci_dev *pdev, unsigned int reg,
                       uint32_t val, void *data)
 {
     struct vpci_bar *bar = data;
@@ -397,7 +397,7 @@ static void bar_write(const struct pci_dev *pdev, unsigned int reg,
     pci_conf_write32(pdev->sbdf, reg, val);
 }
 
-static void rom_write(const struct pci_dev *pdev, unsigned int reg,
+static void rom_write(struct pci_dev *pdev, unsigned int reg,
                       uint32_t val, void *data)
 {
     struct vpci_header *header = &pdev->vpci->header;

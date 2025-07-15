@@ -69,7 +69,7 @@ static int update_entry(struct vpci_msix_entry *entry,
     return 0;
 }
 
-static void control_write(const struct pci_dev *pdev, unsigned int reg,
+static void control_write(struct pci_dev *pdev, unsigned int reg,
                           uint32_t val, void *data)
 {
     uint8_t slot = PCI_SLOT(pdev->devfn), func = PCI_FUNC(pdev->devfn);
