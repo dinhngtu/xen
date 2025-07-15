@@ -21,7 +21,7 @@ class State(object):
         self.names = {}  # Value => Name mapping
         self.values = {} # Name => Value mapping
         self.raw = {
-            '!': set(),
+            '!': set(), '|': set(),
             'A': set(), 'S': set(), 'H': set(),
         }
 
@@ -44,7 +44,7 @@ def parse_definitions(state):
     feat_regex = re.compile(
         r"^XEN_CPUFEATURE\(([A-Z0-9_]+),"
         "\s+([\s\d]+\*[\s\d]+\+[\s\d]+)\)"
-        "\s+/\*([\w!]*) .*$")
+        "\s+/\*([\w!|]*) .*$")
 
     word_regex = re.compile(
         r"^/\* .* word (\d*) .*\*/$")
@@ -395,6 +395,8 @@ def write_results(state):
 
 #define INIT_SPECIAL_FEATURES { \\\n%s\n}
 
+#define INIT_SIMPLE_OR { \\\n%s\n}
+
 #define INIT_PV_FEATURES { \\\n%s\n}
 
 #define INIT_HVM_SHADOW_FEATURES { \\\n%s\n}
@@ -410,6 +412,7 @@ def write_results(state):
        next(featureset_to_uint32s(state.common_1d, 1)),
        format_uint32s(state, state.names.keys(), 4),
        format_uint32s(state, state.raw['!'], 4),
+       format_uint32s(state, state.raw['|'], 4),
        format_uint32s(state, state.pv, 4),
        format_uint32s(state, state.hvm_shadow, 4),
        format_uint32s(state, state.hvm_hap, 4),
